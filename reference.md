@@ -8,10 +8,11 @@
 |----|------|
 | 画布 | `.device` **390×844**；底层 `.device-bg` 列表示意 |
 | 蒙层 | `.page-scrim` `rgba(0,0,0,0.45)`；点蒙层关 sheet（toast 示意） |
-| Sheet | `.stage` 高 **80%**；顶圆角 16；上滑动画可选 |
+| Sheet | `.stage`：`height: auto` + **`max-height: 80%`**（相对 `.device`）；**无最小高度下限**；顶圆角 16；入场上滑可选 |
+| 高度动画 | `transition: height .22s ease`；用 `fitSheetHeight()` 量自然高后写成 px 再过渡（`height: auto` 不可动画） |
 | 顶柄 | `.sheet-handle-top` 36×4 `#E0E0E0` |
 | 标题栏 | 高 44；左关闭；中标题；**无右侧保存** |
-| 滚动 | `.scroll` `flex:1; overflow-y:auto; min-height:0` |
+| 滚动 | `.scroll` 常态 `flex:1; overflow-y:auto; min-height:0`；**量高时**临时 `flex:0 0 auto; overflow:visible` 再恢复 |
 | 底栏 | 仅主按钮；主色 `#F32F41`；安全底可选 |
 | 通栏 | `.block` padding 16；`+ .block::before` 发丝 inset 16 `#EDEDED` |
 | 字体 | Noto Sans SC / Source Han Sans；品牌色 `--brand: #F32F41` |
@@ -67,6 +68,40 @@
 - 页内手风琴（`.more-head` / `.more-body`）；**新建默认折叠**。
 - 放入次要 / 低频：图、开关、关联库存、期限、赠送入口等。
 - 顺序在 PRD 写死；demo-nav 可切折叠/展开。
+- **折叠/展开必须触发 `fitSheetHeight`**：折叠后 sheet 收至纯内容高（可远低于 80%）；展开后增高，封顶 80%。
+
+### `fitSheetHeight` 约定（全创建页共用）
+
+```js
+function fitSheetHeight() {
+  const stage = document.querySelector(".stage");
+  const device = document.querySelector(".device");
+  if (!stage || !device) return;
+  const maxH = Math.round(device.clientHeight * 0.8);
+  const scrolls = [...stage.querySelectorAll(".scroll")].filter(el => !el.classList.contains("hidden"));
+  const prevH = stage.getBoundingClientRect().height || maxH;
+  stage.style.transition = "none";
+  stage.style.height = "auto";
+  scrolls.forEach(el => {
+    el.style.flex = "0 0 auto";
+    el.style.overflow = "visible";
+    el.style.maxHeight = "none";
+  });
+  const natural = Math.ceil(stage.getBoundingClientRect().height);
+  scrolls.forEach(el => {
+    el.style.flex = "";
+    el.style.overflow = "";
+    el.style.maxHeight = "";
+  });
+  const target = Math.min(Math.max(natural, 1), maxH); // 无业务下限，仅防 0
+  stage.style.height = prevH + "px";
+  void stage.offsetHeight;
+  stage.style.transition = "height .22s ease";
+  stage.style.height = target + "px";
+}
+```
+
+挂载：`syncMoreUI` / `toggleMore` / `applyMore` / boot / `resize` → `requestAnimationFrame(() => fitSheetHeight())`。
 
 ## 8. 必填、默认、隐式
 
@@ -102,11 +137,12 @@
 
 ## 13. 生成自检
 
-- [ ] 80% sheet + 无红 `*` + 底栏保存  
+- [ ] sheet 内容自适应 + max 80% + 无下限；`fitSheetHeight` + `.22s` 高度动画  
+- [ ] 无红 `*` + 底栏保存  
 - [ ] 选择卡无勾；strip + 拖滑 + 已选可视  
 - [ ] 非数值 >6 才有「更多」；数值 ≤3 且无金额更多  
 - [ ] 加号 → 同层 add sheet + ≤5 胶囊；有自定义藏加号  
-- [ ] 更多设置默认折叠（若有）  
+- [ ] 更多设置默认折叠（若有）；折叠/展开后高度动画正确  
 - [ ] demo-nav 无金额扩量开关  
 - [ ] 原型与 PRD 同轮；配对表已更新（若新目录）  
 - [ ] 未误抄：假键盘、热点图、头像工资尺、套餐步进（除非域需要）  

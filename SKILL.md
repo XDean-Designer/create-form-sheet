@@ -1,11 +1,11 @@
 ---
 name: create-form-sheet
 description: >-
-  Generates salon/ERP「创建类」表单页：390×844 device, bottom ~80% sheet, pick-strip
-  UX, same-layer sheets, numeric chips ≤3, paired PRD. Use when creating or
-  aligning 新建/创建/添加 forms (员工、项目、产品、卡模板等同构页), 80% sheet
-  prototypes, create-form-sheet, or when user asks to generate a similar create
-  page from established UI/UX rules.
+  Generates salon/ERP「创建类」表单页：390×844 device, bottom sheet 内容自适应高度
+  （无下限、上限 80%、短暂高度动画）, pick-strip UX, same-layer sheets, numeric
+  chips ≤3, paired PRD. Use when creating or aligning 新建/创建/添加 forms
+  (员工、项目、产品、卡模板等同构页), 80% sheet prototypes, create-form-sheet,
+  or when user asks to generate a similar create page from established UI/UX rules.
 ---
 
 # 创建类表单 Sheet（剑琅 / 价目表族）
@@ -21,11 +21,14 @@ description: >-
 
 - 用户要**新建 / 创建 / 添加**某业务实体的表单页（原型和/或 PRD）
 - 要求对齐「创建员工 / 新建项目 / 卡模板 / 新建产品」壳与交互
-- 点名 `create-form-sheet`、80% sheet、选择卡横滑、同层 sheet 加号等
+- 点名 `create-form-sheet`、80% / 自适应 sheet、选择卡横滑、同层 sheet 加号等
 
 ## 硬约束（生成物必须满足）
 
-1. **壳**：画布 **390×844**；创建 UI = 蒙层 + **底部约 80%** sheet（顶柄、标题栏返回关 sheet、内容纵滚）；**仅底栏主按钮保存**（无标题栏右侧保存）。
+1. **壳**：画布 **390×844**；创建 UI = 蒙层 + **底部 sheet**（顶柄、标题栏返回关 sheet、内容纵滚）；**仅底栏主按钮保存**（无标题栏右侧保存）。
+   - **高度**：默认 **内容自适应**（纯内容高，**不设下限**）；**上限 max-height: 80%**（相对 `.device`）。折叠「更多设置」或内容变短时收矮；展开/内容变高时长高，超出 80% 后内部 `.scroll` 滚动。
+   - **动画**：高度变化用短暂过渡（约 **`.22s ease`**）。实现上用 `fitSheetHeight()`：先量自然高 → 写成 px → `transition: height`；`height: auto` 本身无法过渡，禁止只改 CSS 而不量高。
+   - 在 `toggleMore` / `syncMoreUI` / `applyMore` / 启动与 `resize` 后调用 `fitSheetHeight`（可用 `requestAnimationFrame`）。
 2. **无红色必填 `*`**；校验用 toast；通栏白底；块间发丝左右缩进 **16**；内容边距 **16**。
 3. **选择卡**：未选 = 白底 + 轻阴影 + `#D7D7D5` 描边；选中 = **2px `#F32F41`** + `#FFF2F2`；**无勾、无 N% 角标**。
 4. **枚举行**：`.pick-strip` 单行横滑；桌面 **鼠标拖滑**（超阈值不误点）；已选 **`scrollIntoView` 可视**。
